@@ -147,6 +147,10 @@ let poseLabel2 = "Y";
 // Initialize poseCounts as empty objects for each video
 let poseCounts1 = {};
 let poseCounts2 = {};
+let finalResults2 = [];
+
+const folderPath = 'C:/Users/aadig/Downloads/p5_first';
+
 
 function startVideo() {
     video1.play();
@@ -165,7 +169,7 @@ function setup() {
     poseNet1.on('pose', gotPoses1);
 
     // Create second video element
-    video2 = createVideo(['test_vid2.mp4']);
+    video2 = createVideo(['test_vid3.mp4']);
     video2.hide();
     video2.play();
     poseNet2 = ml5.poseNet(video2, modelLoaded2);
@@ -196,6 +200,15 @@ function setup() {
         weights: 'model.weights.bin',
     };
     brain2.load(modelInfo2, brainLoaded2);
+    
+    video2.onended(createTableinExcel);
+}
+
+function createTableinExcel(){
+    console.log('video is over')
+    console.log(finalResults2);
+
+    createExcelFile(finalResults2, 'pose_counts.xlsx')
 }
 
 function brainLoaded1() {
@@ -236,6 +249,7 @@ function classifyPose2() {
     } else {
         setTimeout(classifyPose2, 100);
     }
+    
 }
 
 function gotResult1(error, results) {
@@ -250,16 +264,65 @@ function gotResult1(error, results) {
     classifyPose1();
 }
 
+
+
 function gotResult2(error, results) {
-    if (results[0].confidence > 0.75) {
+    if (!error && results && results.length > 0 && results[0].confidence > 0.75) {
         let newPoseLabel = results[0].label.toUpperCase();
         if (newPoseLabel !== poseLabel2) {
             poseLabel2 = newPoseLabel;
             poseCounts2[poseLabel2] = (poseCounts2[poseLabel2] || 0) + 1;
-            console.log("Video 2: ", poseCounts2);
+            let timestamp = video2.time();
+            console.log("Video 2 - Time:", timestamp, "Counts:", poseCounts2,);
+
+
+            finalResults2.push({ timestamp: timestamp, counts: { ...poseCounts2 } });
+
         }
     }
     classifyPose2();
+}
+
+
+function createExcelFile(data, filePath) {
+    console.log('creating new file');
+
+    const poseLabels = new Set();
+    data.forEach((result) => {
+        const { counts } = result;
+        Object.keys(counts).forEach((pose) => {
+            poseLabels.add(pose);
+        });
+    });
+
+    const sortedPoseLabels = Array.from(poseLabels).sort();
+
+    // Construct the data array for the Excel file
+    const data_to_add = data.map((result) => {
+        const { timestamp, counts } = result;
+        const row = sortedPoseLabels.map((pose) => counts[pose] || 0); // Use 0 if the pose count is undefined
+        row.unshift(timestamp); // Add timestamp as the first element
+        return row;
+    });
+
+    // Add headers for columns
+    const headers = ['Timestamp', ...sortedPoseLabels];
+    data_to_add.unshift(headers);
+
+    // Create a new workbook
+    const workbook = XLSX.utils.book_new();
+
+    // Create a worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(data_to_add);
+
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Final Results');
+
+    // Write the workbook to a file
+    XLSX.writeFile(workbook, filePath);
+
+    console.log('Final results have been stored in an Excel file:', filePath);
+
 }
 
 function gotPoses1(poses) {
