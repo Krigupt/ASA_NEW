@@ -148,8 +148,9 @@ let poseLabel2 = "Y";
 let poseCounts1 = {};
 let poseCounts2 = {};
 let finalResults2 = [];
-
-const folderPath = 'C:/Users/aadig/Downloads/p5_first';
+//new
+let finalResults1 = [];
+//const folderPath = 'C:/Users/aadig/Downloads/p5_first';
 
 
 function startVideo() {
@@ -162,14 +163,14 @@ function setup() {
     createCanvas(2000, 1000);
 
     // Create first video element
-    video1 = createVideo(['test_vid1.mp4']);
+    video1 = createVideo(['vid1.mov']);
     video1.hide();
     video1.play();
     poseNet1 = ml5.poseNet(video1, modelLoaded1);
     poseNet1.on('pose', gotPoses1);
 
     // Create second video element
-    video2 = createVideo(['test_vid3.mp4']);
+    video2 = createVideo(['video2new.mov']);
     video2.hide();
     video2.play();
     poseNet2 = ml5.poseNet(video2, modelLoaded2);
@@ -193,6 +194,8 @@ function setup() {
         weights: 'model.weights.bin',
     };
     brain1.load(modelInfo1, brainLoaded1);
+    //new
+    video1.onended(createTableinExcel);
 
     const modelInfo2 = {
         model: 'model.json',
@@ -207,8 +210,10 @@ function setup() {
 function createTableinExcel(){
     console.log('video is over')
     console.log(finalResults2);
+    //new
+    createExcelFile(finalResults1, 'pose_counts1.xlsx')
 
-    createExcelFile(finalResults2, 'pose_counts.xlsx')
+    createExcelFile(finalResults2, 'pose_counts2.xlsx')
 }
 
 function brainLoaded1() {
@@ -259,6 +264,12 @@ function gotResult1(error, results) {
             poseLabel1 = newPoseLabel;
             poseCounts1[poseLabel1] = (poseCounts1[poseLabel1] || 0) + 1;
             console.log("Video 1: ", poseCounts1);
+
+            let timestamp = video1.time();
+            console.log("Video 1 - Time:", timestamp, "Counts:", poseCounts1,);
+
+
+            finalResults1.push({ timestamp: timestamp, counts: { ...poseCounts1 } });
         }
     }
     classifyPose1();
