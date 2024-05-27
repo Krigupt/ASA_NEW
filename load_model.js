@@ -163,14 +163,14 @@ function setup() {
     createCanvas(2000, 1000);
 
     // Create first video element
-    video1 = createVideo(['vid1.mov']);
+    video1 = createVideo(['video.mp4']);
     video1.hide();
     video1.play();
     poseNet1 = ml5.poseNet(video1, modelLoaded1);
     poseNet1.on('pose', gotPoses1);
 
-    // Create second video element
-    video2 = createVideo(['video2new.mov']);
+    //Create second video element
+    video2 = createVideo(['test_vid2.mp4']);
     video2.hide();
     video2.play();
     poseNet2 = ml5.poseNet(video2, modelLoaded2);
@@ -178,7 +178,7 @@ function setup() {
 
     let options = {
         inputs: 34,
-        outputs: 4,
+        outputs: 2,
         task: 'classification',
         debug: true
     };
@@ -199,8 +199,8 @@ function setup() {
 
     const modelInfo2 = {
         model: 'model.json',
-        metadata: 'model_meta.json',
-        weights: 'model.weights.bin',
+        metadata: 'model_meta(8).json',
+        weights: 'model.weights(7).bin',
     };
     brain2.load(modelInfo2, brainLoaded2);
     
@@ -258,83 +258,32 @@ function classifyPose2() {
 }
 
 function gotResult1(error, results) {
-    if (results[0].confidence > 0.75) {
-        let newPoseLabel = results[0].label.toUpperCase();
-        if (newPoseLabel !== poseLabel1) {
-            poseLabel1 = newPoseLabel;
-            poseCounts1[poseLabel1] = (poseCounts1[poseLabel1] || 0) + 1;
-            console.log("Video 1: ", poseCounts1);
-
-            let timestamp = video1.time();
-            console.log("Video 1 - Time:", timestamp, "Counts:", poseCounts1,);
-
-
-            finalResults1.push({ timestamp: timestamp, counts: { ...poseCounts1 } });
+         if (results[0].confidence >0.23) {
+            let newPoseLabel = results[0].label.toUpperCase();
+            if (newPoseLabel !== poseLabel1) {
+                poseLabel1 = newPoseLabel;
+                poseCounts1[poseLabel1] = (poseCounts1[poseLabel1] || 0) + 1;
+                console.log("Video 1: ", poseCounts1);
+            }
         }
-    }
+    
     classifyPose1();
 }
 
 
-
 function gotResult2(error, results) {
-    if (!error && results && results.length > 0 && results[0].confidence > 0.75) {
-        let newPoseLabel = results[0].label.toUpperCase();
-        if (newPoseLabel !== poseLabel2) {
-            poseLabel2 = newPoseLabel;
-            poseCounts2[poseLabel2] = (poseCounts2[poseLabel2] || 0) + 1;
-            let timestamp = video2.time();
-            console.log("Video 2 - Time:", timestamp, "Counts:", poseCounts2,);
-
-
-            finalResults2.push({ timestamp: timestamp, counts: { ...poseCounts2 } });
-
+        if (results[0].confidence >0.23) {
+            let newPoseLabel = results[0].label.toUpperCase();
+            if (newPoseLabel !== poseLabel2) {
+                poseLabel2 = newPoseLabel;
+                poseCounts2[poseLabel2] = (poseCounts2[poseLabel2] || 0) + 1;
+                console.log("Video 2: ", poseCounts2);
+            }
         }
-    }
+  
     classifyPose2();
 }
 
-
-function createExcelFile(data, filePath) {
-    console.log('creating new file');
-
-    const poseLabels = new Set();
-    data.forEach((result) => {
-        const { counts } = result;
-        Object.keys(counts).forEach((pose) => {
-            poseLabels.add(pose);
-        });
-    });
-
-    const sortedPoseLabels = Array.from(poseLabels).sort();
-
-    // Construct the data array for the Excel file
-    const data_to_add = data.map((result) => {
-        const { timestamp, counts } = result;
-        const row = sortedPoseLabels.map((pose) => counts[pose] || 0); // Use 0 if the pose count is undefined
-        row.unshift(timestamp); // Add timestamp as the first element
-        return row;
-    });
-
-    // Add headers for columns
-    const headers = ['Timestamp', ...sortedPoseLabels];
-    data_to_add.unshift(headers);
-
-    // Create a new workbook
-    const workbook = XLSX.utils.book_new();
-
-    // Create a worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet(data_to_add);
-
-    // Add the worksheet to the workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Final Results');
-
-    // Write the workbook to a file
-    XLSX.writeFile(workbook, filePath);
-
-    console.log('Final results have been stored in an Excel file:', filePath);
-
-}
 
 function gotPoses1(poses) {
     if (poses.length > 0) {

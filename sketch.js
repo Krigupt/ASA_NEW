@@ -124,14 +124,14 @@ function keyPressed() {
             setTimeout(function() {
                 console.log('not collecting');
                 state = 'waiting';
-            }, 2000);
-        }, 2000);
+            }, 120000);
+        }, 1000);
     }
 }
 
 function setup() {
     createCanvas(1000, 800);
-    video = createVideo(['baddi_mine.mp4']);
+    video = createVideo(['last.mp4']);
     // video.play(); // Removed from setup
     //video.hide();
     poseNet = ml5.poseNet(video, modelLoaded);
@@ -139,7 +139,7 @@ function setup() {
 
     let options = {
         inputs: 34,
-        outputs: 4,
+        outputs: 2,
         task: 'classification',
         debug: true
     }
